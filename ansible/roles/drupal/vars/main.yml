@@ -1,0 +1,7 @@
+---
+# vars file for drupal
+databasename: 'drupaldb'
+username: 'root'
+password: '12345678'
+db_port: '3306'
+server: '10.172.20.4'

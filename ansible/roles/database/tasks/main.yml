@@ -1,0 +1,74 @@
+---
+# tasks file for database
+    - name: ensure pip is installed
+      apt:
+            name: python3-pip
+            state: latest
+
+    - name: Get software for apt repository management.
+      apt:
+          state: present
+          name:
+              - python3-apt
+              - python3-pycurl
+
+    - name: Create symbolic link
+      command: ln -sf /usr/bin/python3.8 /usr/bin/python
+    - name: try catch block for installation
+      block:
+        - name: install pymsql for first time
+          command: pip3 install PyMySQL
+      rescue:
+        - name: install pymysql
+          command: pip3 install PyMySQL
+
+    - name: Installing Mysql  and dependencies
+      apt:
+       name: mysql-server
+       state: present
+       update_cache: yes
+
+    - name: start and enable mysql service
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+    - name: Try catch block for mysql user
+      block:
+            - name: update mysql root password for all root accounts - 1
+              mysql_user:
+                login_user: root
+                login_password: "{{ password }}"
+                host: "10.172.10.4"
+                name: root
+                password: "{{ password }}"
+                check_implicit_admin: yes
+                priv: "*.*:ALL,GRANT"
+      rescue:
+          - name: sql query
+            command: sudo mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ password }}';"
+
+    - name: update mysql root password for all root accounts - 2
+      mysql_user:
+           login_user: root
+           login_password: "{{ password }}"
+           host: "0.0.0.0"
+           name: root
+           password: "{{ password }}"
+           check_implicit_admin: yes
+           priv: "*.*:ALL,GRANT"
+
+    - name: create a new database
+      mysql_db:
+           name: drupaldb
+           state: present
+           login_user: root
+           login_password: "{{ password }}"
+
+    - name: Enable remote login to mysql
+      lineinfile:
+         path: /etc/mysql/mysql.conf.d/mysqld.cnf
+         regexp: '^bind-address'
+         line: 'bind-address = 0.0.0.0'
+         backup: yes
+      notify: restart mysql service

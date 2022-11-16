@@ -1,0 +1,20 @@
+<VirtualHost *:80>
+ServerAdmin me@myserver
+DocumentRoot /var/www/html/drupal/
+ServerName www.example.com
+ServerAlias www.example.com
+ErrorLog ${APACHE_LOG_DIR}/error.log
+CustomLog ${APACHE_LOG_DIR}/access.log combined
+<Directory /var/www/html/drupal/>
+Options FollowSymlinks
+AllowOverride All
+Require all granted
+</Directory>
+<Directory /var/www/html/>
+RewriteEngine on
+RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
+</Directory>
+</VirtualHost>

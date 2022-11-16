@@ -1,0 +1,15 @@
+-
+ hosts: all
+ become: true
+ gather_facts: true
+ tasks:
+   - name: Print the url for drupal web page
+     ansible.builtin.debug:
+        msg: "{{ ansible_ssh_host }}/drupal"
+     when: inventory_hostname in groups['webservers']
+
+ roles:
+    - role: drupal
+      when: inventory_hostname in groups['webservers']
+    - role: database
+      when: inventory_hostname in groups['DBservers']

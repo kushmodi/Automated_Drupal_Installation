@@ -1,0 +1,101 @@
+---
+# tasks file for drupal
+    - name: Install latest version of Apache
+      apt:
+          name: apache2
+          state: latest
+      notify: restart apache2
+
+    - name: Installation install software-properties-common
+      apt:
+          name: software-properties-common
+
+    - name: "Repo PHP 7.4"
+      apt_repository:
+              repo: "ppa:ondrej/php"
+
+    - name: Installation PHP 7.4
+      apt:
+              name: php7.4
+              state: present
+
+    - name: install lamp stack
+      apt:
+            pkg:
+              - php7.4-mysql
+              - php7.4-curl
+              - php7.4-json
+              - php7.4-cgi
+              - php7.4-xsl
+              - php7.4-cgi
+              - php7.4-gd
+              - php7.4-mbstring
+              - php7.4-zip
+              - php7.4-xmlrpc
+              - php7.4-soap
+              - php7.4-intl
+              - libapache2-mod-php
+            state: present
+    - name: "Updating the repo"
+      apt:
+          update_cache: yes
+
+    - name: Creating a file with content
+      copy:
+          dest: "/var/www/html/phpinfo.php"
+          content: |
+             <?php phpinfo(); ?>
+
+    - name: Download drupal file
+      ansible.builtin.get_url:
+          url: https://ftp.drupal.org/files/projects/drupal-8.9.1.tar.gz
+          dest: /tmp
+    - name: Try catch block for file existance
+      block:
+            - name: check if file exists or not
+              command: ls /var/www/html/drupal
+      rescue:
+        - name: Unzip drupal file in tmp
+          command: tar -xvzf /tmp/drupal-8.9.1.tar.gz -C /tmp
+
+    - name: Move drupal file
+      block:
+        - name: check if file is present or not
+          command: ls /var/www/html/drupal
+      rescue:
+        - name: move file if not present
+          command: sudo mv /tmp/drupal-8.9.1 /var/www/html/drupal
+
+    - name: change owner permission
+      command: sudo chown -R www-data:www-data /var/www/html/drupal/
+
+    - name: change permission
+      command: sudo chmod -R 755 /var/www/html/drupal/
+
+    - name: check if drupal.conf exists or not
+      block:
+        - name: drupal. conf is available or not
+          command: ls /etc/apache2/sites-available/drupal.conf
+      rescue:
+          - name: Setting configuration file for database
+            template:
+                src: ../templates/drupal_conf.j2
+                dest: "/etc/apache2/sites-available/drupal.conf"
+
+    - name: enable apache2
+      command: sudo a2ensite drupal.conf
+    - name: enable rewrite
+      command: sudo a2enmod rewrite
+    - name: enable environment
+      command: sudo a2enmod env
+    - name: enable directory
+      command: sudo a2enmod dir
+    - name: enable directory
+      command: sudo a2enmod mime
+      notify: restart-apache2
+
+    - name: Setting configuration file for database
+      template:
+            src: ../templates/connect.j2
+            dest: "/var/www/html/drupal/sites/default/settings.php"
+
